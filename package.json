@@ -1,0 +1,16 @@
+{
+	"name": "server",
+	"version": "1.0.0",
+	"main": "index.js",
+	"type": "commonjs",
+	"license": "MIT",
+	"dependencies": {
+		"ws": "^8.8.0"
+	},
+	"scripts": {
+		"start": "nodemon index.js"
+	},
+	"devDependencies": {
+		"nodemon": "^2.0.16"
+	}
+}
