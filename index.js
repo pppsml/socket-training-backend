@@ -1,39 +1,40 @@
-const ws = require('ws');
+import express from 'express';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+
+import cors from './middleware/cors.middleware.js';
 
 const PORT = 7878;
 
-const wss = new ws.Server(
-	{
-		port: PORT,
-	},
-	() => {
-		console.log(`Server starter on port ${PORT}`);
-	},
-);
+const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+	cors: { origin: '*' },
+});
 
-wss.on('connection', (ws) => {
-	ws.id = Date.now();
-	ws.on('message', (data) => {
-		message = JSON.parse(data);
-		switch (message.event) {
-			case 'connection':
-				broadcastMessage(message, ws.id);
-				break;
+app.use(cors);
+app.use(express.json());
 
-			case 'message':
-				broadcastMessage(message, ws.id);
-				break;
+const rooms = {};
 
-			default:
-				break;
-		}
+io.on('connection', (socket) => {
+	console.log('connected', socket.id, socket.rooms);
+
+	socket.on('ROOM:join', (data) => {
+		console.log(data);
+		socket.join(data.roomId);
+		socket.broadcast.to(data.roomId).emit('ROOM:user_connected', {
+			username: data.username,
+		});
+		socket.send('connecting success');
+	});
+
+	socket.on('ROOM:send_message', (data) => {
+		console.log(socket.id, data);
+		io.to(data.roomId).emit('ROOM:get_message', data);
 	});
 });
 
-function broadcastMessage(message, id) {
-	console.log('room id', id);
-	wss.clients.forEach((client) => {
-		console.log(message.userName, client.id);
-		client.send(JSON.stringify(message));
-	});
-}
+httpServer.listen(PORT, () => {
+	console.log(`Server started on port ${PORT}`);
+});
